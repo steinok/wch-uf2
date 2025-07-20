@@ -261,8 +261,9 @@ extern uint32_t UF2_GOT_BLOCKS[AUTO_BOOT_BITMAP_NUM_HWORDS];
 #define R32_GPIOA_BSHR      (*(volatile uint32_t*)0x40010810)
 
 // USBD registers are within range to perform gp relaxation
-// XXX wrong access size, but this doesn't seem to matter
-extern volatile uint32_t R16_USBD_EPR[16];
+// The EP registers are actually 16-bit wide. Using the correct type
+// avoids undefined behaviour on some toolchains.
+extern volatile uint16_t R16_USBD_EPR[16];
 extern volatile uint16_t R16_USBD_CNTR;
 extern volatile uint16_t R16_USBD_ISTR;
 extern volatile uint16_t R16_USBD_DADDR;
@@ -339,7 +340,7 @@ __attribute__((always_inline)) static inline void set_ep_mode(uint32_t epidx, ui
     else
         cur_stats = val & 0x3030;
     uint32_t want_stats = (stat_rx << 12) | (stat_tx) << 4;
-    R16_USBD_EPR[epidx] = epaddr | (eptype << 9) | xtra | (cur_stats ^ want_stats);
+    R16_USBD_EPR[epidx] = (uint16_t)(epaddr | (eptype << 9) | xtra | (cur_stats ^ want_stats));
 }
 // Outlining these functions saves code size
 static void set_ep0_ack_in() {
@@ -534,19 +535,25 @@ __attribute__((naked)) int main(void) {
                         CTRL_XFER_STATE = STATE_CTRL_SIMPLE_IN;
                         set_ep0_ack_in();
                     } else if (bRequest_bmRequestType == 0x0102) {
-                        // CLEAR_FEATURE
-                        // XXX how is this supposed to work?
-                        // Not implementing this will cause subtle breakage
-                        // when an unsupported SCSI command is sent.
+                        // CLEAR_FEATURE (ENDPOINT_HALT)
+                        uint32_t wValue = USB_EP0_OUT[1];
                         uint32_t wIndex = USB_EP0_OUT[2];
-                        if (wIndex == 0x81) {
-                            uint32_t dCSWTag = CSWTAG_LO | (CSWTAG_HI << 16);
-                            make_msc_csw(dCSWTag, 1);
-                            msc_state = (msc_state & 0xffffff00) | STATE_SENT_CSW;
-                            set_ep0_ack_in();
-                        } else if (wIndex == 0x01) {
-                            set_ep1_ack_out();
-                            msc_state = (msc_state & 0xffffff00) | STATE_WANT_CBW;
+                        if (wValue == 0) {
+                            if (wIndex == 0x81) {
+                                uint32_t dCSWTag = CSWTAG_LO | (CSWTAG_HI << 16);
+                                make_msc_csw(dCSWTag, 1);
+                                msc_state = (msc_state & 0xffffff00) | STATE_SENT_CSW;
+                                set_ep1_ack_in();
+                            } else if (wIndex == 0x01) {
+                                set_ep1_ack_out();
+                                msc_state = (msc_state & 0xffffff00) | STATE_WANT_CBW;
+                            } else if (wIndex == 0x00) {
+                                /* just clear EP0 stall */
+                            } else {
+                                set_ep0_stall();
+                                break;
+                            }
+                            USB_DESCS[0].count_tx = 0;
                             set_ep0_ack_in();
                         } else {
                             set_ep0_stall();

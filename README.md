@@ -35,4 +35,5 @@ The examples do *not* use a verbatim copy of the vendor startup bits -- some ele
     - Legacy `.init` is *not* called
 - Various initialization for CSRs, interrupt handling, etc. are not hardcoded in the startup assembly code. The intention is that this can be done with `__attribute__((constructor))`.
 
-The example Makefiles contain a horrible hardcoded path to `uf2conv.py`. This needs to be fixed before they will work on your computer.
+The example Makefiles now use the `UF2CONV` variable to locate `uf2conv.py`.
+Set `UF2CONV` if the script is not in your `PATH`.
