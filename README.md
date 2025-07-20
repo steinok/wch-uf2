@@ -37,3 +37,29 @@ The examples do *not* use a verbatim copy of the vendor startup bits -- some ele
 
 The example Makefiles now use the `UF2CONV` variable to locate `uf2conv.py`.
 Set `UF2CONV` if the script is not in your `PATH`.
+The `example-rust` directory contains a minimal Rust version of the blinky demo. Run `make` there after installing the `riscv32imac-unknown-none-elf` target with `rustup`.
+
+## Rust Embedded
+
+Rust Embedded is a project for enabling the Rust Programming Language on
+"bare metal" embedded systems. Because Embedded Rust does not rely on the
+standard library (`no_std`), a wider selection of RISC-V targets is
+supported compared to a full Rust runtime.
+
+Supported targets include:
+
+### Bare RISC-V RV32
+- RV32I
+- RV32IMAC
+- RV32IMC
+
+### Bare RISC-V RV64
+- RV64IMAFDC
+- RV64IMAC
+
+A quickstart guide for building Rust applications for the HiFive1 board
+can be found at
+[riscv-rust-quickstart](https://github.com/riscv-rust/riscv-rust-quickstart).
+
+Applications built with Rust can be converted to UF2 and loaded using
+this bootloader in the same way as the C examples above.
