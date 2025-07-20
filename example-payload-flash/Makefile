@@ -9,12 +9,13 @@ UF2CONV ?= uf2conv.py
 CFLAGS = -ggdb3 -Os -march=$(RV_ARCH) -ffunction-sections -fdata-sections
 LDFLAGS = -ggdb3 -march=$(RV_ARCH) -Wl,--gc-sections --specs=nosys.specs
 
+
 all: main.uf2
 
-main.elf: startup.o main.o
+main.elf: startup.o main.o led_effects.o
 
 %.uf2: %.bin
-        $(UF2CONV) -c -f 0x699b62ec -b 0x08001000 -o $@ $<
+	$(UF2CONV) -c -f 0x699b62ec -b 0x08001000 -o $@ $<
 
 %.bin: %.elf
 	$(OBJCOPY) -O binary $< $@
